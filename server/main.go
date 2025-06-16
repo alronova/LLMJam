@@ -64,6 +64,16 @@ func main() {
 			})
 		})
 
+		// Auth Routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/signup", signupHandler)
+			auth.POST("/login", loginHandler)
+			auth.POST("/logout", authMiddleware(), logoutHandler)
+			auth.GET("/profile", authMiddleware(), profileHandler)
+			auth.PUT("/profile", authMiddleware(), updateProfileHandler)
+		}
+
 		// Chat Route
 		api.POST("/chat", func(c *gin.Context) {
 			var payload RequestPayload
