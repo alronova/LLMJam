@@ -148,7 +148,7 @@ func logoutHandler(c *gin.Context) {
 func profileHandler(c *gin.Context) {
 	userID := c.GetString("userID")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(userID)
@@ -185,7 +185,7 @@ func profileHandler(c *gin.Context) {
 
 func updateProfileHandler(c *gin.Context) {
 	userID := c.GetString("userID")
-	
+
 	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -210,7 +210,6 @@ func updateProfileHandler(c *gin.Context) {
 	updateData := bson.M{
 		"updated_at": time.Now(),
 	}
-
 	if req.FirstName != "" {
 		updateData["first_name"] = req.FirstName
 	}
@@ -218,26 +217,50 @@ func updateProfileHandler(c *gin.Context) {
 		updateData["last_name"] = req.LastName
 	}
 
-	result, err := usersColl.UpdateOne(
-		ctx,
-		bson.M{"_id": objectID},
-		bson.M{"$set": updateData},
-	)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "database_error",
-			Message: "Failed to update profile",
-		})
-		return
+	// To perform update to userData.
+	if len(updateData) > 1 { // >1 because updated_at is always present
+		_, err := usersColl.UpdateOne(
+			ctx,
+			bson.M{"_id": objectID},
+			bson.M{"$set": updateData},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Error:   "database_error",
+				Message: "Failed to update profile",
+			})
+			return
+		}
 	}
 
-	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, ErrorResponse{
-			Error:   "user_not_found",
-			Message: "User not found",
-		})
-		return
+	// To Update Chats
+	if len(req.Chats) > 0 {
+		// Assigns ObjectIDs to new chats if missing
+		for i := range req.Chats {
+			if req.Chats[i].ID.IsZero() {
+				req.Chats[i].ID = primitive.NewObjectID()
+			}
+		}
+
+		// Push chat-data into user's "chats" array
+		_, err := usersColl.UpdateOne(
+			ctx,
+			bson.M{"_id": objectID},
+			bson.M{
+				"$push": bson.M{
+					"chats": bson.M{
+						"$each": req.Chats,
+					},
+				},
+			},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Error:   "database_error",
+				Message: "Failed to append chats",
+			})
+			return
+		}
 	}
 
 	// Fetch updated user
