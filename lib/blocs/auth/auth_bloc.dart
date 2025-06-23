@@ -60,8 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await authRepository.deleteToken();
-    await authRepository.deleteUser();
+    await authRepository.deleteUserCreds();
     emit(AuthUnauthenticated());
   }
 

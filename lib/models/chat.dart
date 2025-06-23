@@ -1,18 +1,18 @@
 class ChatMessage {
   final String role; // 'user' or 'assistant'
-  final String message;
+  final String content;
 
-  ChatMessage({required this.role, required this.message});
+  ChatMessage({required this.role, required this.content});
 
   Map<String, dynamic> toJson() => {
         'role': role,
-        'message': message,
+        'content': content,
       };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
       role: json['role'],
-      message: json['message'],
+      content: json['content'],
     );
   }
 }
@@ -31,7 +31,7 @@ class ChatSession {
   factory ChatSession.fromJson(Map<String, dynamic> json) {
     return ChatSession(
       id: json['id'],
-      chat: json['chat'],
+      chat: json['chat'] as List<ChatMessage>,
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+// import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:convert';
@@ -8,14 +8,15 @@ import 'package:http/http.dart' as http;
 class AuthRepository {
   final _storage = FlutterSecureStorage();
 
-  final String baseUrl = dotenv.get("B_URL"); // your API endpoint
+  final String baseUrl = dotenv.get("B_URL");
 
   Future<void> saveUser(Object user) async {
     await _storage.write(key: 'auth_user', value: jsonEncode(user));
   }
 
-  Future<void> deleteUser() async {
+  Future<void> deleteUserCreds() async {
     await _storage.delete(key: 'auth_user');
+    await _storage.delete(key: 'auth_token');
   }
 
   Future<void> saveToken(String token) async {
@@ -24,10 +25,6 @@ class AuthRepository {
 
   Future<String?> getToken() async {
     return await _storage.read(key: 'auth_token');
-  }
-
-  Future<void> deleteToken() async {
-    await _storage.delete(key: 'auth_token');
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
@@ -41,10 +38,9 @@ class AuthRepository {
         if (decodedUserData['id'] == decodedToken['user_id']) {
           return decodedUserData;
         } else {
-          await deleteUser();
-          await deleteToken();
+          await deleteUserCreds();
           throw Exception(
-            'User ID mismatch: ${decodedUserData['id']} != ${decodedToken['user_id']}',
+            'User ID mismatch, please log in again.',
           );
         }
       }
@@ -63,10 +59,10 @@ class AuthRepository {
       final body = jsonDecode(response.body);
       await saveToken(body['token']);
       await saveUser(body['user']);
-      debugPrint('Login Response: $body');
       return JwtDecoder.decode(body['token']);
     } else {
-      throw Exception('Login failed: ${response.body}');
+      final body = jsonDecode(response.body);
+      throw Exception(body['message']);
     }
   }
 
@@ -89,12 +85,12 @@ class AuthRepository {
 
     if (response.statusCode == 201) {
       final body = jsonDecode(response.body);
-      debugPrint('Signup response: $body');
       await saveToken(body['token']);
       await saveUser(body['user']);
       return JwtDecoder.decode(body['token']);
     } else {
-      throw Exception('Signup failed: ${response.body}');
+      final body = jsonDecode(response.body);
+      throw Exception(body['message']);
     }
   }
 }
