@@ -35,14 +35,17 @@ class AuthRepository {
     if (token != null && !JwtDecoder.isExpired(token)) {
       final decodedToken = JwtDecoder.decode(token);
       final userData = await _storage.read(key: 'auth_user');
+      // debugPrint('Decoded Token: $decodedToken\nUser Data: $userData');
       if (userData != null) {
         final decodedUserData = jsonDecode(userData);
-        if (decodedUserData['id'] == decodedToken['id']) {
+        if (decodedUserData['id'] == decodedToken['user_id']) {
           return decodedUserData;
         } else {
           await deleteUser();
           await deleteToken();
-          debugPrint('User ID mismatch: ${decodedUserData['id']} != ${decodedToken['id']}');
+          throw Exception(
+            'User ID mismatch: ${decodedUserData['id']} != ${decodedToken['user_id']}',
+          );
         }
       }
     }
@@ -67,17 +70,28 @@ class AuthRepository {
     }
   }
 
-  Future<Map<String, dynamic>> signup(String firstName, String lastName, String email, String password) async {
+  Future<Map<String, dynamic>> signup(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/signup'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'firstName': firstName, 'lastName': lastName, 'email': email, 'password': password}),
+      body: jsonEncode({
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'password': password,
+      }),
     );
 
     if (response.statusCode == 201) {
       final body = jsonDecode(response.body);
       debugPrint('Signup response: $body');
       await saveToken(body['token']);
+      await saveUser(body['user']);
       return JwtDecoder.decode(body['token']);
     } else {
       throw Exception('Signup failed: ${response.body}');

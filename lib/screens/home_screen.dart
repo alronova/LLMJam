@@ -9,11 +9,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Welcome, ${user['firstName'] ?? 'User'}'),
+        title: Text('Welcome, ${user['firstName']}'),
       ),
       body: Center(
         child: Text(
-          'Welcome to LLM JAM, ${user['firstName'] ?? 'guest'}!',
+          'Welcome to LLM JAM, ${user['firstName']}!',
         ),
       ),
     );
