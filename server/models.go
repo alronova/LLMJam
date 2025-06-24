@@ -19,8 +19,10 @@ type RequestPayload struct {
 
 // Chat Model
 type ChatModel struct {
-	ID		 primitive.ObjectID	`json:"id"`
-	Chat	 []Message			`json:"chat"`
+	ID		 	primitive.ObjectID	`json:"id"`
+	Title	  	string            	`json:"title"`
+	Description string            	`json:"description"`
+	Chat	 	[]Message			`json:"chat"`
 }
 
 // User Model

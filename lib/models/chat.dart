@@ -19,18 +19,24 @@ class ChatMessage {
 
 class ChatSession {
   final String id;
+  final String title;
+  final String description;
   final List<ChatMessage> chat;
 
-  ChatSession({required this.id, required this.chat});
+  ChatSession({required this.id, required this.title, required this.description, required this.chat});
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'title': title,
+        'description': description,
         'chat': chat,
       };
 
   factory ChatSession.fromJson(Map<String, dynamic> json) {
     return ChatSession(
       id: json['id'],
+      title: json['title'],
+      description: json['description'],
       chat: json['chat'] as List<ChatMessage>,
     );
   }

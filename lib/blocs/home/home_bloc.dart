@@ -13,6 +13,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   HomeBloc({required this.chatRepository}) : super(HomeInitial()) {
     on<ChatSessionsRequested>(_onChatSessionsRequested);
+    on<NewChatSession>(_onNewChatSession);
   }
 
   FutureOr<void> _onChatSessionsRequested(event, Emitter<HomeState> emit) 
@@ -28,5 +29,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } catch (e) {
       emit(HomeError("Failed to load chat sessions: ${e.toString()}"));
     }
+  }
+
+  FutureOr<void> _onNewChatSession(event, Emitter<HomeState> emit) {
+    emit(HomeNewSession());
   }
 }

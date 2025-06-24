@@ -1,4 +1,10 @@
 part of 'chat_bloc.dart';
 
 @immutable
-sealed class ChatEvent {}
+abstract class ChatEvent {}
+
+class ChatMessagesRequested extends ChatEvent {
+  final String chatId;
+
+  ChatMessagesRequested({required this.chatId});
+}

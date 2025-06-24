@@ -1,4 +1,3 @@
-// import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:convert';
@@ -32,7 +31,6 @@ class AuthRepository {
     if (token != null && !JwtDecoder.isExpired(token)) {
       final decodedToken = JwtDecoder.decode(token);
       final userData = await _storage.read(key: 'auth_user');
-      // debugPrint('Decoded Token: $decodedToken\nUser Data: $userData');
       if (userData != null) {
         final decodedUserData = jsonDecode(userData);
         if (decodedUserData['id'] == decodedToken['user_id']) {

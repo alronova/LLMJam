@@ -16,3 +16,5 @@ class HomeError extends HomeState {
   final String error;
   HomeError(this.error);
 }
+
+class HomeNewSession extends HomeState {}

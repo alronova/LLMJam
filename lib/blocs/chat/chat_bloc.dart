@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
+import 'package:llm_jam/models/chat.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';

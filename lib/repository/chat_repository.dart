@@ -18,16 +18,26 @@ class ChatRepository {
     );
     final body = jsonDecode(response.body);
     final data = body['data'];
-    return (data['chats'] as List)
-        .map((e) => ChatSession(
-              id: e['id'],
-              chat: (e['chat'] as List)
-                  .map((m) => ChatMessage(
-                        role: m['role'],
-                        content: m['content'],
-                      ))
-                  .toList(),
-            ))
-        .toList();
+    if (response.statusCode == 200) {
+      if (data['chats'] == null) {
+        return [];
+      } else {
+        return (data['chats'] as List)
+            .map((e) => ChatSession(
+                  id: e['id'],
+                  title: e['title'] ?? 'Untitled Chat',
+                  description: e['description'] ?? '',
+                  chat: (e['chat'] as List)
+                      .map((m) => ChatMessage(
+                            role: m['role'],
+                            content: m['content'],
+                          ))
+                      .toList(),
+                ))
+            .toList();
+          }
+    } else {
+      throw Exception('Failed to fetch chat sessions: ${body['message']}');
+    }
   }
 }
