@@ -109,7 +109,12 @@ class HomeScreen extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final session = sessions[index];
                           return ListTile(
-                            title: Text(session.title),
+                            title: Text(
+                              session.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                            ),
                             onTap: () {
                               Navigator.pushReplacement(
                                 context,
@@ -121,18 +126,30 @@ class HomeScreen extends StatelessWidget {
                                     chat: session.chat
                                     )
                                   ),
-                              );                              
+                              );                         
                             },
+                            subtitle: Text(
+                              '\n${session.description}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis
+                            ),
+                            textColor: Colors.white,
+                            titleTextStyle: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            subtitleTextStyle: TextStyle(
+                              color: Colors.white70,                      
+                              fontSize: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            contentPadding: const EdgeInsets.all(15),
+                            tileColor: const Color.fromARGB(255, 33, 1, 54),
                           );
                         },
                         separatorBuilder: (context, index) => SizedBox(height: 16),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        'Welcome, ${user['firstName']} ${user['lastName']}!',
-                        style: const TextStyle(fontSize: 20),
                       ),
                     ),
                     BottomAppBar(  

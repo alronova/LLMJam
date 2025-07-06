@@ -57,10 +57,15 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-type UpdateProfileRequest struct {
-	FirstName string		`json:"firstName"`
-	LastName  string		`json:"lastName"`
-	Chats     []ChatModel	`json:"chats"`
+// Chat Update Request Model
+type ChatUpdateModel struct {
+	Chat     ChatModel	`json:"chat"`
+}
+
+// Message Update Request Model
+type MessageUpdateModel struct {
+	ChatID   primitive.ObjectID `json:"chatId"`
+	Message  Message            `json:"message"`
 }
 
 // General Response Model

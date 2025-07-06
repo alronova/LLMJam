@@ -9,9 +9,8 @@ class ChatLoading extends ChatState {}
 
 class ChatLoaded extends ChatState {
   final List<ChatMessage> messages;
-  final String chatId;
 
-  ChatLoaded({required this.messages, required this.chatId});
+  ChatLoaded({required this.messages});
 }
 
 class ChatError extends ChatState {
@@ -20,8 +19,3 @@ class ChatError extends ChatState {
   ChatError(this.error);
 }
 
-class ChatMessageSent extends ChatState {
-  final ChatMessage message;
-
-  ChatMessageSent(this.message);
-}

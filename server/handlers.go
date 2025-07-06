@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"bytes"
+	"encoding/json"
+	"io"
 	"context"
 	"net/http"
 	"time"
@@ -139,10 +143,72 @@ func loginHandler(c *gin.Context) {
 	})
 }
 
-func logoutHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, SuccessResponse{
-		Message: "Successfully logged out",
-	})
+func chatUpdateHandler(c *gin.Context) {
+	var req ChatUpdateModel
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "validation_error",
+			Message: err.Error(),
+		})
+		return
+	}
+}
+
+func messageUpdateHandler(c *gin.Context) {
+    userID := c.GetString("userID")
+
+    var req MessageUpdateModel
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, ErrorResponse{
+            Error:   "validation_error",
+            Message: err.Error(),
+        })
+        return
+    }
+
+    objectID, err := primitive.ObjectIDFromHex(userID)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, ErrorResponse{
+            Error:   "invalid_user_id",
+            Message: "Invalid user ID format",
+        })
+        return
+    }
+
+    filter := bson.M{
+        "_id":      objectID,
+        "chats.id": req.ChatID,
+    }
+
+    update := bson.M{
+        "$push": bson.M{
+            "chats.$.chat": req.Message,
+        },
+    }
+
+    ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+    defer cancel()
+
+    result, err := usersColl.UpdateOne(ctx, filter, update)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, ErrorResponse{
+            Error:   "update_failed",
+            Message: "Failed to update chat",
+        })
+        return
+    }
+
+    if result.MatchedCount == 0 {
+        c.JSON(http.StatusNotFound, ErrorResponse{
+            Error:   "chat_not_found",
+            Message: "No chat found with the given ID for this user",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, SuccessResponse{
+        Message: "Chat updated successfully",
+    })
 }
 
 func profileHandler(c *gin.Context) {
@@ -183,99 +249,45 @@ func profileHandler(c *gin.Context) {
 	})
 }
 
-func updateProfileHandler(c *gin.Context) {
-	userID := c.GetString("userID")
+func chatHandler(c *gin.Context) {
+	
+	apiKey := os.Getenv("API_KEY")
+	apiURL := os.Getenv("BASE_URL")
 
-	var req UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "validation_error",
-			Message: err.Error(),
-		})
+	var payload RequestPayload
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	defer cancel()
-
-	objectID, err := primitive.ObjectIDFromHex(userID)
+	reqBody, err := json.Marshal(payload)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "invalid_user_id",
-			Message: "Invalid user ID format",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal payload"})
 		return
 	}
 
-	updateData := bson.M{
-		"updated_at": time.Now(),
-	}
-	if req.FirstName != "" {
-		updateData["first_name"] = req.FirstName
-	}
-	if req.LastName != "" {
-		updateData["last_name"] = req.LastName
-	}
-
-	// To perform update to userData.
-	if len(updateData) > 1 { // >1 because updated_at is always present
-		_, err := usersColl.UpdateOne(
-			ctx,
-			bson.M{"_id": objectID},
-			bson.M{"$set": updateData},
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error:   "database_error",
-				Message: "Failed to update profile",
-			})
-			return
-		}
-	}
-
-	// To Update Chats
-	if len(req.Chats) > 0 {
-		// Assigns ObjectIDs to new chats if missing
-		for i := range req.Chats {
-			if req.Chats[i].ID.IsZero() {
-				req.Chats[i].ID = primitive.NewObjectID()
-			}
-		}
-
-		// Push chat-data into user's "chats" array
-		_, err := usersColl.UpdateOne(
-			ctx,
-			bson.M{"_id": objectID},
-			bson.M{
-				"$push": bson.M{
-					"chats": bson.M{
-						"$each": req.Chats,
-					},
-				},
-			},
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error:   "database_error",
-				Message: "Failed to append chats",
-			})
-			return
-		}
-	}
-
-	// Fetch updated user
-	var updatedUser User
-	err = usersColl.FindOne(ctx, bson.M{"_id": objectID}).Decode(&updatedUser)
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(reqBody))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "database_error",
-			Message: "Failed to fetch updated profile",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Message: "Profile updated successfully",
-		Data:    updatedUser,
-	})
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to reach external service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
+		return
+	}
+
+	c.Data(resp.StatusCode, "application/json", body)		
 }

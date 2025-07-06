@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -31,8 +28,6 @@ func main() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	apiKey := os.Getenv("API_KEY")
-	apiURL := os.Getenv("BASE_URL")
 	port := os.Getenv("PORT")
 
 
@@ -69,50 +64,13 @@ func main() {
 		{
 			auth.POST("/signup", signupHandler)
 			auth.POST("/login", loginHandler)
-			auth.POST("/logout", authMiddleware(), logoutHandler)
+			auth.POST("/chat", authMiddleware(), chatUpdateHandler)
+			auth.POST("/message", authMiddleware(), messageUpdateHandler)
 			auth.GET("/profile", authMiddleware(), profileHandler)
-			auth.PUT("/profile", authMiddleware(), updateProfileHandler)
 		}
 
 		// Chat Route
-		api.POST("/chat", func(c *gin.Context) {
-			var payload RequestPayload
-			if err := c.BindJSON(&payload); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-				return
-			}
-
-			reqBody, err := json.Marshal(payload)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal payload"})
-				return
-			}
-
-			req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(reqBody))
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
-				return
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+apiKey)
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to reach external service"})
-				return
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
-				return
-			}
-
-			c.Data(resp.StatusCode, "application/json", body)
-		})
+		api.POST("/chat", authMiddleware(), chatHandler)
 	}
 
 	log.Printf("Server starting on port %s", port)

@@ -5,7 +5,6 @@ import 'package:llm_jam/blocs/auth/auth_bloc.dart';
 import 'package:llm_jam/repository/auth_repository.dart';
 import 'package:llm_jam/screens/home_screen.dart';
 import 'package:llm_jam/screens/login_screen.dart';
-// import 'package:llm_jam/blocs/home/home_bloc.dart';
 import 'package:llm_jam/repository/chat_repository.dart';
 
 void main() async {
@@ -27,10 +26,6 @@ class LLMJam extends StatelessWidget {
           create: (_) =>
               AuthBloc(authRepository: authRepo)..add(AuthCheckStatus()),
         ),
-        // BlocProvider(
-        //   create: (_) => HomeBloc(chatRepository: chatRepo)
-        //     ..add(ChatSessionsRequested()),
-        // ),
       ],
       child: MaterialApp(
         title: 'LLM JAM',

@@ -22,7 +22,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final sessions = await chatRepository.getChatSessions();
       if (sessions.isNotEmpty) {
-        emit(HomeLoaded("Chat sessions loaded successfully.", sessions));
+        emit(HomeLoaded(message: "Chat sessions loaded successfully.", chatSessions: sessions));
       } else {
         emit(HomeError("No chat sessions found."));
       }
